@@ -1,3 +1,5 @@
+require 'msgpack'
+
 class Game
 
   #this class will handle the internal game logic
@@ -71,12 +73,20 @@ class Game
     @@incorrect_guesses != 7 ? true : false
   end
 
-  def save_game()
+  def to_msgpack()
     #this function will serialize the current game data and output it to a Marshall binary file to be loaded back in later
+    MessagePack.dump ({
+      :lines => @lines,
+      :word => @word,
+      :guesses => @guesses,
+      :incorrect_guesses => @@incorrect_guesses,
+      })
   end
 
-  def load_game(string)
+  def self.from_msgpack(string)
     #if user selects to load a previous game, deserialize the saved game file and initialize a new game with that data
+    data = MessagePack.load string
+    self.new(data['lines'], data['word'], data['guesses'], data['incorrect_guesses'])
   end
 
   def generate_word()
