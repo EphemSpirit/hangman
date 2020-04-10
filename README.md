@@ -8,7 +8,7 @@ the underscores will be replaced by that letter, wherever that letter appears in
 
 Players get 10 wrong guesses before the game exits and shows them what the word was!
 
-The main purpose of this project was to use serialization in Ruby, letting the player save and load their game if they want to
+The main purpose of this project is to use serialization in Ruby, letting the player save and load their game if they want to
 stop in the middle of a game and resume it later.
 
 Built as part of <i>The Odin Project</i> curriculum.
