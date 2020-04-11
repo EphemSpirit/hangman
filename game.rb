@@ -1,17 +1,14 @@
-require 'msgpack'
+require 'json'
+
+Dir = "hangman"
 
 class Game
 
-  #this class will handle the internal game logic
-  #attr_reader for array of guessed letters, as well as the word (sequence of underscores/letters that the player is working with)
   @@incorrect_guesses = 0
 
   attr_accessor :word, :lines
 
-  def initialize
-    #initialize with a new Board object
-    #will also initialize an empty array to house already guessed letters
-    #set a class variable that iterates the number of incorrect guesses
+  def initialize(*save_file)
     @guesses = []
     @word = generate_word()
     @lines = Array.new(@word.length, "_")
@@ -20,24 +17,39 @@ class Game
     puts "====================================\n"
     puts "The rules are simple: You have to guess the secret word!"
     puts "Seven wrong guesses and the game will end."
-    puts "Guessing a letter you've already tried won't count against you. Good luck!\n\n\n"
-    print @lines
+    puts "Guessing a letter you've already tried won't count against you."
+    puts "If you'd like to save your game ad come back later, just submit 'save', as your guess."
+    puts "Good luck!\n\n\n"
+    print "The word is #{@lines.length} letters long:"
     puts
     puts
-    take_turn()
+    take_turn
   end
 
   def check_for_save
-    #check for a saved game, and if one is found, ask if the user would like to load it
+    saved_game = "saved_game.json"
+    if saved_game.exists?
+      puts "Would you like to load the previous game file? (y/n)"
+      response = gets.chomp
+      if response == "y"
+        self.load_game(saved_game)
+        Game.new(save_game)
+      else
+        Dir.rm "saved_game.json"
+        Game.new
+      end
+    end
   end
 
-  def take_turn()
-
-    until @lines.join == @word || @@incorrect_guesses == 7
+  def take_turn
+    until word_complete? || @@incorrect_guesses == 7
       puts "Choose a letter!"
       @guess = gets.chomp.downcase
       if @guesses.include?(@guess)
-        puts "Letter already chosen! Try again."
+        puts "Letter already chosen! Try again.\n\n"
+      elsif @guess == 'save'
+        save_game
+        exit
       else
         if word.include?(@guess)
           @guesses.push(@guess)
@@ -45,54 +57,58 @@ class Game
         else
           @@incorrect_guesses += 1
           @guesses.push(@guess)
-          puts "That letter is not in the word :("
-          puts "Number of wrong guesses: #{@@incorrect_guesses}"
+          if !more_tries?
+            puts puts "Out of attempts! The word was #{@word}. Better luck next time!"
+            exit
+          else
+            puts "That letter is not in the word :("
+            puts "Number of wrong guesses: #{@@incorrect_guesses}\n\n"
+          end
         end
       end
     end
   end
 
-  #maybe move this one over to Board.rb
   def update_display
     matches = (0...@word.length).find_all{ |i| @word[i, 1] == @guess }
     matches.each do |idx|
       lines[idx] = lines[idx].sub("_", @guess)
     end
-    print @lines
+    print @lines.join(" ")
     puts
-    if !more_tries?()
-      puts "Out of attempts! The word was #{@word}. Better luck next time!"
-    end
+    puts
   end
 
-  def word_complete?(word_to_guess)
-    #if word_to_guess == generated word, the game is over
+  def word_complete?
+    if @lines.join == @word
+      puts "You guessed the word (#{@word})! Congratulations :)"
+      exit
+    end
   end
 
   def more_tries?
     @@incorrect_guesses != 7 ? true : false
   end
 
-  def to_msgpack()
-    #this function will serialize the current game data and output it to a Marshall binary file to be loaded back in later
-    MessagePack.dump ({
-      :lines => @lines,
-      :word => @word,
-      :guesses => @guesses,
-      :incorrect_guesses => @@incorrect_guesses,
-      })
+  private
+
+  def save_game
+    save_file = File.open("saved_game.json", "w")
+    save_file.write(@game.to_json)
+    save_file.close
+    p save_file
   end
 
-  def self.from_msgpack(string)
-    #if user selects to load a previous game, deserialize the saved game file and initialize a new game with that data
-    data = MessagePack.load string
-    self.new(data['lines'], data['word'], data['guesses'], data['incorrect_guesses'])
+  def load_game(string)
+    save_file = SaveFile.new("saved.json")
+    json = save_file.read
+    JSON::load(json)
   end
 
   def generate_word()
-    File.read("5desk.txt").lines.select{ |line| (5..12).cover?(line.strip.size)}.sample.strip
+    File.read("5desk.txt").lines.select{ |line| (5..12).cover?(line.strip.size)}.sample.strip.downcase
   end
 end
 
 game = Game.new
-game
+game.check_for_save
