@@ -1,6 +1,6 @@
 require 'json'
 
-Dir = "hangman"
+saved_game = "saved_game.json"
 
 class Game
 
@@ -27,15 +27,14 @@ class Game
   end
 
   def check_for_save
-    saved_game = "saved_game.json"
-    if saved_game.exists?
+    if File.exist? saved_game
       puts "Would you like to load the previous game file? (y/n)"
       response = gets.chomp
       if response == "y"
         self.load_game(saved_game)
-        Game.new(save_game)
+        Game.new(saved_game)
       else
-        Dir.rm "saved_game.json"
+        File.rm "saved_game.json"
         Game.new
       end
     end
@@ -93,20 +92,24 @@ class Game
   private
 
   def save_game
+    game_state = {
+      :guesses => @guesses,
+      :lines => @lines,
+      :incorrect_guesses => @@incorrect_guesses,
+      :word => @word,
+    }
     save_file = File.open("saved_game.json", "w")
-    save_file.write(@game.to_json)
+    save_file.write(game_state.to_json)
     save_file.close
-    p save_file
   end
 
-  def load_game(string)
-    save_file = SaveFile.new("saved.json")
-    json = save_file.read
-    JSON::load(json)
+  def self.load_game(string)
+    game_data = JSON.load(string)
+    self.new(data['guesses'], data['lines'], data['incorrect_guesses'], data['word'])
   end
 
   def generate_word()
-    File.read("5desk.txt").lines.select{ |line| (5..12).cover?(line.strip.size)}.sample.strip.downcase
+    File.read("5desk.txt").lines.select{ |line| (5..12).cover?(line.strip.size) }.sample.strip.downcase
   end
 end
 
