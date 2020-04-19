@@ -1,7 +1,5 @@
 require 'json'
 
-saved_game = "saved_game.json"
-
 class Game
 
   @@incorrect_guesses = 0
@@ -9,6 +7,7 @@ class Game
   attr_accessor :word, :lines
 
   def initialize(*save_file)
+    check_for_save()
     @guesses = []
     @word = generate_word()
     @lines = Array.new(@word.length, "_")
@@ -18,7 +17,7 @@ class Game
     puts "The rules are simple: You have to guess the secret word!"
     puts "Seven wrong guesses and the game will end."
     puts "Guessing a letter you've already tried won't count against you."
-    puts "If you'd like to save your game ad come back later, just submit 'save', as your guess."
+    puts "If you'd like to save your game and come back later, just submit 'save', as your guess."
     puts "Good luck!\n\n\n"
     print "The word is #{@lines.length} letters long:"
     puts
@@ -27,14 +26,14 @@ class Game
   end
 
   def check_for_save
+    saved_game = "saved_game.json"
     if File.exist? saved_game
       puts "Would you like to load the previous game file? (y/n)"
       response = gets.chomp
       if response == "y"
-        self.load_game(saved_game)
-        Game.new(saved_game)
-      else
-        File.rm "saved_game.json"
+        Game.load_game(saved_game)
+      elsif response == "n"
+        File.delete "saved_game.json"
         Game.new
       end
     end
@@ -93,10 +92,10 @@ class Game
 
   def save_game
     game_state = {
-      :guesses => @guesses,
-      :lines => @lines,
-      :incorrect_guesses => @@incorrect_guesses,
-      :word => @word,
+      guesses: @guesses,
+      lines: @lines,
+      incorrect_guesses: @@incorrect_guesses,
+      word: @word,
     }
     save_file = File.open("saved_game.json", "w")
     save_file.write(game_state.to_json)
@@ -104,8 +103,8 @@ class Game
   end
 
   def self.load_game(string)
-    game_data = JSON.load(string)
-    self.new(data['guesses'], data['lines'], data['incorrect_guesses'], data['word'])
+    data = JSON.load(File.read(string))
+    # self.new(data)
   end
 
   def generate_word()
@@ -114,4 +113,5 @@ class Game
 end
 
 game = Game.new
-game.check_for_save
+game
+# game.check_for_save
