@@ -15,7 +15,7 @@ class Game
     puts "======= Welcome to Hangman! ========"
     puts "====================================\n"
     puts "The rules are simple: You have to guess the secret word!"
-    puts "Seven wrong guesses and the game will end."
+    puts "Fifteen wrong guesses and the game will end."
     puts "Guessing a letter you've already tried won't count against you."
     puts "If you'd like to save your game and come back later, just submit 'save', as your guess."
     puts "Good luck!\n\n\n"
@@ -31,7 +31,7 @@ class Game
       puts "Would you like to load the previous game file? (y/n)"
       response = gets.chomp
       if response == "y"
-        Game.load_game(saved_game)
+        game = self.load_game(saved_game)
       elsif response == "n"
         File.delete "saved_game.json"
         Game.new
@@ -85,10 +85,8 @@ class Game
   end
 
   def more_tries?
-    @@incorrect_guesses != 7 ? true : false
+    @@incorrect_guesses != 15 ? true : false
   end
-
-  private
 
   def save_game
     game_state = {
@@ -102,9 +100,13 @@ class Game
     save_file.close
   end
 
-  def self.load_game(string)
+  def load_game(string)
     data = JSON.load(File.read(string))
-    # self.new(data)
+    @guesses = data['guesses']
+    @lines = data['lines']
+    @incorrect_guesses = data['incorrect_guesses']
+    @word = data['word']
+    take_turn
   end
 
   def generate_word()
@@ -114,4 +116,3 @@ end
 
 game = Game.new
 game
-# game.check_for_save
